@@ -1,7 +1,6 @@
 //
 // Created by Patrik on 6. 1. 2026.
 //
-
 #ifndef GAME_CONSTANTS_H
 #define GAME_CONSTANTS_H
 
@@ -17,10 +16,10 @@
 
 // Typy lodí a ich veľkosti
 typedef enum {
-    CARRIER = 5,      // Nosič lietadiel
-    BATTLESHIP = 4,   // Bitevná loď
-    DESTROYER = 3,    // Torpédoborec
-    SUBMARINE = 2     // Ponorka
+    CARRIER = 5,
+    BATTLESHIP = 4,
+    DESTROYER = 3,
+    SUBMARINE = 2
 } ShipType;
 
 // Počet lodí každého typu

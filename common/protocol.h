@@ -1,7 +1,6 @@
 //
 // Created by Patrik on 6. 1. 2026.
 //
-
 #ifndef PROTOCOL_H
 #define PROTOCOL_H
 
@@ -10,26 +9,31 @@
 
 #define MAX_BUFFER_SIZE 4096
 #define MAX_SHIPS (NUM_CARRIERS + NUM_BATTLESHIPS + NUM_DESTROYERS + NUM_SUBMARINES)
+#define MAX_GAME_NAME 64
 
 // Typy správ medzi klientom a serverom
 typedef enum {
     // Client -> Server
-    MSG_JOIN_GAME,          // Klient sa pripája k hre
+    MSG_CREATE_GAME,        // Vytvorenie novej hry
+    MSG_LIST_GAMES,         // Žiadosť o zoznam hier
+    MSG_JOIN_GAME,          // Pripojenie k existujúcej hre
     MSG_PLACE_SHIP,         // Umiestnenie lode
-    MSG_READY,              // Klient je pripravený (všetky lode umiestnené)
+    MSG_READY,              // Klient je pripravený
     MSG_SHOOT,              // Strela na súperovo pole
-    MSG_RANDOM_PLACEMENT,   // Žiadosť o náhodné rozmiestnenie lodí
+    MSG_RANDOM_PLACEMENT,   // Náhodné rozmiestnenie lodí
     MSG_PAUSE_GAME,         // Pozastavenie hry
     MSG_RESUME_GAME,        // Pokračovanie v hre
     MSG_SURRENDER,          // Vzdanie hry
     MSG_DISCONNECT,         // Odpojenie
 
     // Server -> Client
-    MSG_GAME_CONFIG,        // Konfigurácia hry (veľkosť, časy)
+    MSG_GAME_CREATED,       // Hra vytvorená
+    MSG_GAME_LIST,          // Zoznam hier
+    MSG_GAME_CONFIG,        // Konfigurácia hry
     MSG_PLAYER_JOINED,      // Druhý hráč sa pripojil
     MSG_PLACEMENT_OK,       // Loď úspešne umiestnená
     MSG_PLACEMENT_ERROR,    // Chyba pri umiestnení lode
-    MSG_GAME_START,         // Hra začína (obaja hráči ready)
+    MSG_GAME_START,         // Hra začína
     MSG_YOUR_TURN,          // Tvoj ťah
     MSG_SHOT_RESULT,        // Výsledok strely
     MSG_OPPONENT_SHOT,      // Súper vystrelil
@@ -62,12 +66,49 @@ typedef struct {
     uint32_t length;    // Dĺžka dát za hlavičkou
 } MessageHeader;
 
+// (MSG_GAME_LIST)
+typedef struct {
+    int game_id;
+    char game_name[MAX_GAME_NAME];
+    int board_size;
+    int turn_time;
+    int game_time;
+    int players_count;      // 1 alebo 2
+    GameState state;
+} GameInfo;
+
+// (MSG_CREATE_GAME)
+typedef struct {
+    char game_name[MAX_GAME_NAME];
+    int board_size;
+    int turn_time;
+    int game_time;
+} CreateGameMsg;
+
+// (MSG_JOIN_GAME)
+typedef struct {
+    int game_id;
+} JoinGameMsg;
+
+// (MSG_GAME_CREATED)
+typedef struct {
+    int game_id;
+    char game_name[MAX_GAME_NAME];
+} GameCreatedMsg;
+
+// (MSG_GAME_LIST)
+typedef struct {
+    int games_count;
+    GameInfo games[10];     // Max 10 hier v zozname
+} GameListMsg;
+
 // (MSG_GAME_CONFIG)
 typedef struct {
     int board_size;
     int turn_time;      // Sekundy na ťah
     int game_time;      // Celkový čas hry v sekundách
     int player_id;      // 0 alebo 1
+    int game_id;
 } GameConfig;
 
 // (MSG_PLACE_SHIP)
@@ -116,8 +157,12 @@ typedef struct {
     int continue_turn;       // 1 ak môže strieľať znova (po zásahu)
 } YourTurnMsg;
 
-// Generické správy union pre jednoduchšie parsovanie
+// Union pre všetky typy dát
 typedef union {
+    CreateGameMsg create_game;
+    JoinGameMsg join_game;
+    GameCreatedMsg game_created;
+    GameListMsg game_list;
     GameConfig game_config;
     PlaceShipMsg place_ship;
     ShootMsg shoot;

@@ -1,5 +1,9 @@
 # IDE
-.idea
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
 
 # Prerequisites
 *.d
@@ -9,15 +13,20 @@ build/
 cmake-build-*/
 out/
 
+# CMake generované súbory
+CMakeCache.txt
+CMakeFiles/
+cmake_install.cmake
+Makefile
+*.cmake
+!CMakeLists.txt
+
 # Object files
 *.o
 *.obj
 *.so
 *.dylib
 *.dll
-*.exe
-server
-client
 
 # Linker output
 *.ilk
@@ -47,6 +56,8 @@ client
 *.i*86
 *.x86_64
 *.hex
+server
+client
 
 # Debug files
 *.dSYM/
@@ -63,7 +74,7 @@ Module.symvers
 Mkfile.old
 dkms.conf
 
-# debug information files
+# Debug information files
 *.dwo
 
 # Logs

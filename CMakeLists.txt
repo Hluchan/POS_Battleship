@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.25)
-project(POS_Battleship C)
+project(POS_Battleship_OOP C)
 
 set(CMAKE_C_STANDARD 11)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -pthread -Wall -Wextra")
@@ -13,6 +13,12 @@ set(COMMON_SOURCES
 
 add_executable(server
         server/server.c
+        server/player.c
+        server/player.h
+        server/game.c
+        server/game.h
+        server/game_manager.c
+        server/game_manager.h
         server/game_logic.c
         server/game_logic.h
         server/server.h
@@ -31,6 +37,8 @@ target_link_libraries(server
 
 add_executable(client
         client/client.c
+        client/client_state.c
+        client/client_state.h
         client/ui.c
         client/ui.h
         client/client.h
