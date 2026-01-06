@@ -1,0 +1,8 @@
+//
+// Created by Patrik on 6. 1. 2026.
+//
+
+#ifndef POS_BATTLESHIP_GAME_CONSTANTS_H
+#define POS_BATTLESHIP_GAME_CONSTANTS_H
+
+#endif //POS_BATTLESHIP_GAME_CONSTANTS_H
