@@ -1,9 +1,10 @@
 //
 // Created by Patrik on 6. 1. 2026.
 //
-
 #ifndef GAME_LOGIC_H
 #define GAME_LOGIC_H
+
+#include "server.h"
 
 // Funkcie hernej logiky
 void handle_game_message(Game* game, int player_id, Message* msg);
