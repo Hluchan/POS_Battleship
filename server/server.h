@@ -42,14 +42,6 @@ typedef struct {
     int active;             // 1 ak je hra aktívna
 } Game;
 
-typedef struct {
-    int server_socket;
-    int port;
-    Game games[MAX_GAMES];
-    pthread_mutex_t games_mutex;
-    int running;
-} ServerState;
-
 // Funkcie
 int init_server(int port);
 void* handle_client(void* arg);

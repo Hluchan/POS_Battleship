@@ -2,7 +2,7 @@
 // Created by Patrik on 15. 12. 2025.
 //
 #include "server.h"
-#include "game_logic.h"
+#include "game_manager.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -13,7 +13,7 @@
 #include <signal.h>
 #include <errno.h>
 
-ServerState server_state;
+
 
 int main() {
     return 0;
