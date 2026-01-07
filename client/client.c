@@ -66,7 +66,7 @@ int main(int argc, char* argv[]) {
         return 1;
     }
 
-    printf("\n✅ CONNECTION SUCCESSFUL!\n\n");
+    printf("\n CONNECTION SUCCESSFUL!\n\n");
     printf("Testing basic communication...\n");
 
     // Test: Požiadaj o zoznam hier
@@ -100,7 +100,7 @@ int main(int argc, char* argv[]) {
         }
 
         GameListMsg* glm = &response.data.game_list;
-        printf("\n📊 SERVER HAS %d ACTIVE GAMES:\n", glm->games_count);
+        printf("\n SERVER HAS %d ACTIVE GAMES:\n", glm->games_count);
 
         for (int i = 0; i < glm->games_count; i++) {
             printf("  [%d] %s - %dx%d - %d/2 players - State: %d\n",

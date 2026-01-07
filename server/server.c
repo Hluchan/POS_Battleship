@@ -445,6 +445,12 @@ static void handle_signal(int sig) {
     (void)sig;
     printf("\n[Server] Shutting down...\n");
     g_running = 0;
+
+    // Zavretie socketu aby sme sa nedostali do accept loopu
+    if (g_server_socket != -1) {
+        close(g_server_socket);
+        g_server_socket = -1;
+    }
 }
 
 // INICIALIZACIA A HLAVNY LOOP
@@ -600,7 +606,10 @@ int main(int argc, char* argv[]) {
 
     // Cleanup
     printf("\n[Server] Cleaning up...\n");
-    close(g_server_socket);
+    if (g_server_socket != -1) {
+        close(g_server_socket);
+        g_server_socket = -1;
+    }
 
     // Vyčisti všetky hry
     game_manager_cleanup_ended_games(g_game_manager);
