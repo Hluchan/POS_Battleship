@@ -445,6 +445,12 @@ static void handle_signal(int sig) {
     (void)sig;
     printf("\n[Server] Shutting down...\n");
     g_running = 0;
+
+    // Zavretie socketu aby sme sa nedostali do accept loopu
+    if (g_server_socket != -1) {
+        close(g_server_socket);
+        g_server_socket = -1;
+    }
 }
 
 // INICIALIZACIA A HLAVNY LOOP
