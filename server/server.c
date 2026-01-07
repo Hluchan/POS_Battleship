@@ -446,9 +446,10 @@ static void handle_signal(int sig) {
     printf("\n[Server] Shutting down...\n");
     g_running = 0;
 
-    // shutdown() pre istotu (funguje lepšie ako close())
+    // Zavretie socketu aby sme sa nedostali do accept loopu
     if (g_server_socket != -1) {
-        shutdown(g_server_socket, SHUT_RDWR);
+        close(g_server_socket);
+        g_server_socket = -1;
     }
 }
 
@@ -555,29 +556,6 @@ int main(int argc, char* argv[]) {
 
     // Hlavný accept loop
     while (g_running) {
-        // Priprav file descriptor set
-        fd_set readfds;
-        FD_ZERO(&readfds);
-        FD_SET(g_server_socket, &readfds);
-
-        struct timeval timeout;
-        timeout.tv_sec = 1;   // 1 sekunda timeout
-        timeout.tv_usec = 0;
-
-        // Počkaj max 1 sekundu na pripojenie
-        int activity = select(g_server_socket + 1, &readfds, NULL, NULL, &timeout);
-
-        if (activity < 0 && g_running) {
-            // Error pri select (okrem prípadu keď g_running = 0)
-            perror("select");
-            break;
-        }
-
-        if (activity == 0) {
-            // Timeout - žiadny klient, pokračuj (skontroluje g_running)
-            continue;
-        }
-
         struct sockaddr_in client_addr;
         socklen_t addr_len = sizeof(client_addr);
 
@@ -628,6 +606,7 @@ int main(int argc, char* argv[]) {
 
     // Cleanup
     printf("\n[Server] Cleaning up...\n");
+    // Kontrola ci uz nieje socket zatvoreny
     if (g_server_socket != -1) {
         close(g_server_socket);
         g_server_socket = -1;
