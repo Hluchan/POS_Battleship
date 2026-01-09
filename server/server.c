@@ -222,22 +222,6 @@ void handle_place_ship(ClientContext* ctx, Message* msg) {
     }
 }
 
-// MSG_RANDOM_PLACEMENT
-void handle_random_placement(ClientContext* ctx, Message* msg) {
-    (void)msg;
-
-    if (!ctx->current_game) {
-        send_error(ctx->socket_fd, "Not in game");
-        return;
-    }
-
-    if (place_ships_randomly(ctx->player, game_get_board_size(ctx->current_game))) {
-        send_message(ctx->socket_fd, MSG_PLACEMENT_OK, NULL, 0);
-    } else {
-        send_error(ctx->socket_fd, "Random placement failed");
-    }
-}
-
 // MSG_READY
 void handle_ready(ClientContext* ctx, Message* msg) {
     (void)msg;
@@ -381,10 +365,6 @@ void* handle_client(void* arg) {
 
             case MSG_PLACE_SHIP:
                 handle_place_ship(ctx, &msg);
-                break;
-
-            case MSG_RANDOM_PLACEMENT:
-                handle_random_placement(ctx, &msg);
                 break;
 
             case MSG_READY:

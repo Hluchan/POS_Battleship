@@ -41,7 +41,6 @@ add_executable(client
         client/client_state.h
         client/ui.c
         client/ui.h
-        client/client.h
         ${COMMON_SOURCES}
 )
 

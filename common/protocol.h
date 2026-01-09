@@ -20,7 +20,6 @@ typedef enum {
     MSG_PLACE_SHIP,         // Umiestnenie lode
     MSG_READY,              // Klient je pripravený
     MSG_SHOOT,              // Strela na súperovo pole
-    MSG_RANDOM_PLACEMENT,   // Náhodné rozmiestnenie lodí
     MSG_PAUSE_GAME,         // Pozastavenie hry
     MSG_RESUME_GAME,        // Pokračovanie v hre
     MSG_SURRENDER,          // Vzdanie hry

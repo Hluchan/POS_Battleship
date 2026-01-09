@@ -46,15 +46,6 @@ player_add_ship(player, ship);
 return 1;
 }
 
-int place_ships_randomly(Player* player, int board_size) {
-    if (!player) return 0;
-
-    // TODO: Implement random rozmiestnenie
-    // Zatiaľ vráť úspech
-    (void)board_size;
-    return 1;
-}
-
 // STRELBA
 ShotResult process_shot(Player* target, int row, int col) {
     if (!target) return SHOT_MISS;

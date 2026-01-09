@@ -10,7 +10,6 @@
 
 // VALIDACIA A UMIESTNENIE LODI
 int validate_and_place_ship(Player* player, const Ship* ship);
-int place_ships_randomly(Player* player, int board_size);
 
 // STRELBA
 ShotResult process_shot(Player* target, int row, int col);
