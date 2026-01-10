@@ -15,6 +15,8 @@ ClientState* client_state_create() {
     state->socket_fd = -1;
     state->state = STATE_MENU;
     state->in_game = 0;
+    state->last_opp_shot_row = -1;
+    state->last_opp_shot_col = -1;
 
     client_state_reset_boards(state);
 
@@ -38,6 +40,12 @@ void client_state_reset(ClientState* state) {
     state->in_game = 0;
     state->ships_placed = 0;
     state->ships_ready = 0;
+
+    // Reset ship status
+    for (int i = 0; i < MAX_SHIPS; i++) {
+        state->my_ships_status[i] = 0;
+        state->opp_ships_status[i] = 0;
+    }
 
     state->my_ships_sunk = 0;
     state->opp_ships_sunk = 0;
@@ -135,6 +143,7 @@ int client_state_add_ship(ClientState* state, const Ship* ship) {
 
     // Pridaj do zoznamu
     state->my_ships[state->ships_placed] = *ship;
+    state->my_ships_status[state->ships_placed] = 1;  // Loď umiestnená
     state->ships_placed++;
 
     // Skontroluj či sú všetky lode umiestnené

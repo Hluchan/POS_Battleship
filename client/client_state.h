@@ -40,6 +40,8 @@ typedef struct {
     Ship my_ships[MAX_SHIPS];
     int ships_placed;
     int ships_ready;         // 1 ak všetky lode umiestnené
+    int my_ships_status[MAX_SHIPS];    // 0=not placed, 1=placed, 2=sunk
+    int opp_ships_status[MAX_SHIPS];   // 0=not sunk, 1=sunk
 
     // Štatistiky
     int my_ships_sunk;

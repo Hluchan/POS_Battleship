@@ -19,7 +19,7 @@ void ui_init() {
         init_pair(1, COLOR_CYAN, COLOR_BLACK);    // Voda
         init_pair(2, COLOR_GREEN, COLOR_BLACK);   // Loď
         init_pair(3, COLOR_RED, COLOR_BLACK);     // Zásah
-        init_pair(4, COLOR_YELLOW, COLOR_BLACK);  // Mínenie
+        init_pair(4, COLOR_YELLOW, COLOR_BLACK);  // Minutie
         init_pair(5, COLOR_WHITE, COLOR_BLACK);   // Text
     }
 }
@@ -168,8 +168,8 @@ void ui_draw_game_screen(ClientState* state) {
     mvprintw(stats_y + 8, 2, "Your hits: %d  misses: %d", state->my_hits, state->my_misses);
     mvprintw(stats_y + 9, 2, "Opp hits:  %d  misses: %d", state->opp_hits, state->opp_misses);
 
-    // Posledná akcia súpera
-    if (state->last_opp_shot_row >= 0) {
+    // Posledná akcia súpera - zobraz iba ak je platná
+    if (state->last_opp_shot_row >= 0 && state->last_opp_shot_col >= 0) {
         mvprintw(stats_y + 11, 2, "Opponent shot at: %c%d - %s",
                  'A' + state->last_opp_shot_col,
                  state->last_opp_shot_row + 1,
@@ -271,19 +271,41 @@ void ui_draw_board(int start_y, int start_x, ClientState* state, int my_board, i
 }
 
 void ui_draw_ships_status(int start_y, int start_x, ClientState* state) {
-    mvprintw(start_y, start_x, "SHIPS STATUS:");
+    mvprintw(start_y, start_x, "YOUR SHIPS:");
+    mvprintw(start_y, start_x + 30, "OPPONENT SHIPS:");
 
     // Zoznam lodí
     const char* ship_names[] = {"Carrier (5)", "Battleship (4)", "Destroyer (3)", "Destroyer (3)",
                                 "Submarine (2)", "Submarine (2)"};
 
     for (int i = 0; i < 6; i++) {
-        if (i < state->ships_placed) {
-            attron(COLOR_PAIR(2));
+        // Tvoje lode
+        if (state->my_ships_status[i] == 2) {
+            // Potopená
+            attron(COLOR_PAIR(3));  // Červená
+            mvprintw(start_y + 1 + i, start_x, "[X] %s (SUNK)", ship_names[i]);
+            attroff(COLOR_PAIR(3));
+        } else if (state->my_ships_status[i] == 1) {
+            // Umiestnená
+            attron(COLOR_PAIR(2));  // Zelená
             mvprintw(start_y + 1 + i, start_x, "[X] %s", ship_names[i]);
             attroff(COLOR_PAIR(2));
         } else {
+            // Neumiestená
             mvprintw(start_y + 1 + i, start_x, "[ ] %s", ship_names[i]);
+        }
+
+        // Súperove lode (zobraz len počas bitky)
+        if (state->state == STATE_BATTLE || state->state == STATE_GAME_OVER) {
+            if (state->opp_ships_status[i] == 1) {
+                // Potopená
+                attron(COLOR_PAIR(3));
+                mvprintw(start_y + 1 + i, start_x + 30, "[X] %s (SUNK)", ship_names[i]);
+                attroff(COLOR_PAIR(3));
+            } else {
+                // Stále pláva
+                mvprintw(start_y + 1 + i, start_x + 30, "[ ] %s", ship_names[i]);
+            }
         }
     }
 }

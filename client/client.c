@@ -100,6 +100,37 @@ void handle_create_game() {
 }
 
 void handle_join_game() {
+    // Najprv zobraz zoznam dostupných hier
+    send_message(g_state->socket_fd, MSG_LIST_GAMES, NULL, 0);
+
+    Message msg;
+    if (receive_message(g_state->socket_fd, &msg) > 0 && msg.header.type == MSG_GAME_LIST) {
+        GameListMsg* glm = &msg.data.game_list;
+
+        clear();
+        mvprintw(2, 5, "=== AVAILABLE GAMES ===");
+
+        if (glm->games_count == 0) {
+            mvprintw(4, 5, "No games available.");
+            mvprintw(6, 5, "Press any key to return to menu...");
+            refresh();
+            getch();
+            return;
+        }
+
+        for (int i = 0; i < glm->games_count; i++) {
+            mvprintw(4 + i, 5, "[%d] %s - %dx%d - %d/2 players",
+                     glm->games[i].game_id,
+                     glm->games[i].game_name,
+                     glm->games[i].board_size,
+                     glm->games[i].board_size,
+                     glm->games[i].players_count);
+        }
+
+        mvprintw(4 + glm->games_count + 2, 5, "Enter game ID to join: ");
+        refresh();
+    }
+
     int game_id;
     ui_get_game_id(&game_id);
 
@@ -108,7 +139,6 @@ void handle_join_game() {
 
     send_message(g_state->socket_fd, MSG_JOIN_GAME, &jgm, sizeof(JoinGameMsg));
 
-    Message msg;
     if (receive_message(g_state->socket_fd, &msg) > 0) {
         if (msg.header.type == MSG_GAME_CONFIG) {
             client_state_set_config(g_state, &msg.data.game_config);
@@ -284,12 +314,21 @@ void handle_battle_phase() {
 
         if (select(g_state->socket_fd + 1, &readfds, NULL, NULL, &tv) > 0) {
             Message msg;
-            if (receive_message(g_state->socket_fd, &msg) > 0) {
+            int recv_result = receive_message(g_state->socket_fd, &msg);
+            if (recv_result > 0) {
                 handle_server_message(&msg);
+            } else if (recv_result <= 0) {
+                // Server disconnected
+                ui_show_error("Server disconnected!");
+                sleep(2);
+                client_state_reset(g_state);
+                g_state->state = STATE_MENU;
+                return;
             }
         }
     }
 }
+
 void handle_server_message(Message* msg) {
     switch (msg->header.type) {
         case MSG_GAME_CONFIG:
@@ -333,6 +372,26 @@ void handle_server_message(Message* msg) {
                 } else if (srm->result == SHOT_SUNK) {
                     g_state->my_hits++;
                     g_state->opp_ships_sunk++;
+
+                    // Označ loď ako potopenú na základe typu
+                    // ShipType: CARRIER=0, BATTLESHIP=1, DESTROYER=2, SUBMARINE=3
+                    // Pozícia v poli: Carrier(0), Battleship(1), Destroyer(2,3), Submarine(4,5)
+                    int ship_index = -1;
+                    if (srm->ship_type == CARRIER) ship_index = 0;
+                    else if (srm->ship_type == BATTLESHIP) ship_index = 1;
+                    else if (srm->ship_type == DESTROYER) {
+                        // Nájdi prvého destroyer ktorý nie je potopený
+                        ship_index = (g_state->opp_ships_status[2] == 0) ? 2 : 3;
+                    }
+                    else if (srm->ship_type == SUBMARINE) {
+                        // Nájdi prvú submarine ktorá nie je potopená
+                        ship_index = (g_state->opp_ships_status[4] == 0) ? 4 : 5;
+                    }
+
+                    if (ship_index >= 0 && ship_index < MAX_SHIPS) {
+                        g_state->opp_ships_status[ship_index] = 1;  // Potopená
+                    }
+
                     ui_show_message("SUNK!");
                 } else {
                     g_state->my_misses++;
@@ -351,6 +410,25 @@ void handle_server_message(Message* msg) {
                 if (srm->result == SHOT_HIT || srm->result == SHOT_SUNK) {
                     client_state_set_my_cell(g_state, srm->target.row, srm->target.col, HIT);
                     g_state->opp_hits++;
+
+                    // Ak je loď potopená, označ ju
+                    if (srm->result == SHOT_SUNK) {
+                        g_state->my_ships_sunk++;
+
+                        int ship_index = -1;
+                        if (srm->ship_type == CARRIER) ship_index = 0;
+                        else if (srm->ship_type == BATTLESHIP) ship_index = 1;
+                        else if (srm->ship_type == DESTROYER) {
+                            ship_index = (g_state->my_ships_status[2] != 2) ? 2 : 3;
+                        }
+                        else if (srm->ship_type == SUBMARINE) {
+                            ship_index = (g_state->my_ships_status[4] != 2) ? 4 : 5;
+                        }
+
+                        if (ship_index >= 0 && ship_index < MAX_SHIPS) {
+                            g_state->my_ships_status[ship_index] = 2;  // Potopená
+                        }
+                    }
                 } else {
                     client_state_set_my_cell(g_state, srm->target.row, srm->target.col, MISS);
                     g_state->opp_misses++;
@@ -363,6 +441,9 @@ void handle_server_message(Message* msg) {
             g_state->state = STATE_GAME_OVER;
             ui_show_game_over(g_state);
             ui_wait_for_key();
+            // Reset a návrat do menu
+            client_state_reset(g_state);
+            g_state->state = STATE_MENU;
             break;
 
         case MSG_TIME_UPDATE:
@@ -442,16 +523,28 @@ int main(int argc, char* argv[]) {
         } else if (g_state->state == STATE_LOBBY) {
             // Čakaj na správy
             Message msg;
-            if (receive_message(g_state->socket_fd, &msg) > 0) {
+            int recv_result = receive_message(g_state->socket_fd, &msg);
+            if (recv_result > 0) {
                 handle_server_message(&msg);
+            } else if (recv_result <= 0) {
+                ui_show_error("Server disconnected!");
+                sleep(2);
+                client_state_reset(g_state);
+                g_state->state = STATE_MENU;
             }
         } else if (g_state->state == STATE_PLACEMENT) {
             handle_placement_phase();
         } else if (g_state->state == STATE_WAITING_START) {
             ui_show_message("Waiting for game to start...");
             Message msg;
-            if (receive_message(g_state->socket_fd, &msg) > 0) {
+            int recv_result = receive_message(g_state->socket_fd, &msg);
+            if (recv_result > 0) {
                 handle_server_message(&msg);
+            } else if (recv_result <= 0) {
+                ui_show_error("Server disconnected!");
+                sleep(2);
+                client_state_reset(g_state);
+                g_state->state = STATE_MENU;
             }
         } else if (g_state->state == STATE_BATTLE) {
             handle_battle_phase();

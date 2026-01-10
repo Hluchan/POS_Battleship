@@ -66,6 +66,22 @@ int receive_message(int socket_fd, Message* msg) {
     return 1;
 }
 
+void send_time_update_to_both(Game* game) {
+    if (!game) return;
+
+    Player* p0 = game_get_player(game, 0);
+    Player* p1 = game_get_player(game, 1);
+
+    if (!p0 || !p1) return;
+
+    TimeUpdateMsg tum;
+    tum.turn_time_left = game_get_remaining_turn_time(game);
+    tum.game_time_left = game_get_remaining_game_time(game);
+
+    send_message(player_get_socket(p0), MSG_TIME_UPDATE, &tum, sizeof(TimeUpdateMsg));
+    send_message(player_get_socket(p1), MSG_TIME_UPDATE, &tum, sizeof(TimeUpdateMsg));
+}
+
 void send_error(int socket_fd, const char* error_msg) {
     ErrorMsg err;
     strncpy(err.error_message, error_msg, sizeof(err.error_message) - 1);
@@ -251,6 +267,9 @@ void handle_ready(ClientContext* ctx, Message* msg) {
             YourTurnMsg ytm = { .continue_turn = 0 };
             send_message(player_get_socket(p0), MSG_YOUR_TURN, &ytm, sizeof(YourTurnMsg));
         }
+
+        // Pošli time update obom
+        send_time_update_to_both(ctx->current_game);
     }
 }
 
@@ -278,8 +297,17 @@ void handle_shoot(ClientContext* ctx, Message* msg) {
 
     ShootMsg* sm = &msg->data.shoot;
 
-    // Spracuj strelu
+    // Získaj súpera
     Player* opponent = game_get_player(ctx->current_game, 1 - current);
+
+    // Kontrola, či už nebolo strielané na toto políčko
+    CellState target_cell = player_get_board_cell(opponent, sm->target.row, sm->target.col);
+    if (target_cell == HIT || target_cell == MISS) {
+        send_error(ctx->socket_fd, "Already shot at this position");
+        return;
+    }
+
+    // Spracuj strelu
     ShotResult result = process_shot(opponent, sm->target.row, sm->target.col);
 
     // Priprav výsledok
@@ -329,6 +357,7 @@ void handle_shoot(ClientContext* ctx, Message* msg) {
     if (result == SHOT_HIT || result == SHOT_SUNK) {
         YourTurnMsg ytm = { .continue_turn = 1 };
         send_message(ctx->socket_fd, MSG_YOUR_TURN, &ytm, sizeof(YourTurnMsg));
+        send_time_update_to_both(ctx->current_game);
     } else {
         // Prepni ťah
         game_switch_turn(ctx->current_game);
@@ -336,6 +365,7 @@ void handle_shoot(ClientContext* ctx, Message* msg) {
         Player* next = game_get_player(ctx->current_game, game_get_current_player(ctx->current_game));
         YourTurnMsg ytm = { .continue_turn = 0 };
         send_message(player_get_socket(next), MSG_YOUR_TURN, &ytm, sizeof(YourTurnMsg));
+        send_time_update_to_both(ctx->current_game);
     }
 }
 
