@@ -197,6 +197,44 @@ int player_get_total_ships(const Player* player) {
     return player ? player->ships_placed : 0;
 }
 
+Ship* player_find_ship_at(Player* player, int row, int col) {
+    if (!player) return NULL;
+    for (int i = 0; i < player->ships_placed; i++) {
+        Ship* ship = &player->ships[i];
+
+        if (ship->orientation == HORIZONTAL) {
+            // Horizontálna loď - rovnaký riadok, stĺpce od col po col+length-1
+            if (ship->row == row &&
+                col >= ship->col &&
+                col < ship->col + ship->length) {
+                return ship;
+                }
+        } else { // VERTICAL
+            // Vertikálna loď - rovnaký stĺpec, riadky od row po row+length-1
+            if (ship->col == col &&
+                row >= ship->row &&
+                row < ship->row + ship->length) {
+                return ship;
+                }
+        }
+    }
+
+    return NULL;
+}
+
+void player_increment_ship_hits(Player* player, Ship* ship) {
+    if (!player || !ship) return;
+
+    player_lock(player);
+    ship->hits++;
+    player_unlock(player);
+}
+
+int player_is_ship_sunk(const Ship* ship) {
+    if (!ship) return 0;
+    return ship->hits >= ship->length;
+}
+
 // STATISTIKY
 void player_increment_hits(Player* player) {
     if (player) {

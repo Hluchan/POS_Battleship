@@ -286,7 +286,14 @@ void handle_shoot(ClientContext* ctx, Message* msg) {
     ShotResultMsg srm;
     srm.target = sm->target;
     srm.result = result;
-    srm.ship_type = CARRIER;  // TODO: Ziskaj typ lode
+
+    // Získaj typ lode ak bola zasiahnutá alebo potopená
+    if (result == SHOT_HIT || result == SHOT_SUNK) {
+        Ship* hit_ship = player_find_ship_at(opponent, sm->target.row, sm->target.col);
+        srm.ship_type = hit_ship ? hit_ship->type : CARRIER;  // Fallback na CARRIER ak sa nenájde
+    } else {
+        srm.ship_type = CARRIER;  // Pre MISS nemá význam, ale musíme poslať nejakú hodnotu
+    }
 
     // Pošli výsledok obom
     send_message(ctx->socket_fd, MSG_SHOT_RESULT, &srm, sizeof(ShotResultMsg));

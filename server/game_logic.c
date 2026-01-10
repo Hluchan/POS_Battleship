@@ -57,7 +57,17 @@ ShotResult process_shot(Player* target, int row, int col) {
         player_set_board_cell(target, row, col, HIT);
         player_increment_hits(target);
 
-        // TODO: Kontrola potopenia
+        // Kontrola potopenia
+        Ship* hit_ship = player_find_ship_at(target, row, col);
+        if (hit_ship) {
+            player_increment_ship_hits(target, hit_ship);
+
+            if (player_is_ship_sunk(hit_ship)) {
+                // Loď bola potopená
+                player_increment_ships_sunk(target);
+                return SHOT_SUNK;
+            }
+        }
 
         return SHOT_HIT;
     } else if (cell == WATER) {

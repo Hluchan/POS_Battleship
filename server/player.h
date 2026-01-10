@@ -40,6 +40,9 @@ void player_initialize_boards(Player* player);
 int player_add_ship(Player* player, const Ship* ship);
 const Ship* player_get_ship(const Player* player, int index);
 int player_get_total_ships(const Player* player);
+Ship* player_find_ship_at(Player* player, int row, int col);
+void player_increment_ship_hits(Player* player, Ship* ship);
+int player_is_ship_sunk(const Ship* ship);
 
 // STATISTIKY
 void player_increment_hits(Player* player);
