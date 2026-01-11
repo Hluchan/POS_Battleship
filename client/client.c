@@ -100,7 +100,22 @@ void handle_create_game() {
 }
 
 void handle_join_game() {
-    // Najprv zobraz zoznam dostupných hier
+    // Zahod všetky staré správy z queue pred poslaním MSG_LIST_GAMES
+    while (1) {
+        fd_set readfds;
+        FD_ZERO(&readfds);
+        FD_SET(g_state->socket_fd, &readfds);
+        struct timeval tv = {0, 0};  // Non-blocking
+
+        if (select(g_state->socket_fd + 1, &readfds, NULL, NULL, &tv) <= 0) {
+            break;  // Žiadne správy v queue
+        }
+
+        Message dummy;
+        receive_message(g_state->socket_fd, &dummy);  // Zober a zahoď
+    }
+
+    // Teraz pošli MSG_LIST_GAMES s čistou slate
     send_message(g_state->socket_fd, MSG_LIST_GAMES, NULL, 0);
 
     Message msg;
@@ -116,7 +131,9 @@ void handle_join_game() {
         if (msg.header.type == MSG_ERROR) {
             ui_show_error(msg.data.error.error_message);
         } else {
-            ui_show_error("Unexpected response from server");
+            char err[128];
+            snprintf(err, sizeof(err), "Unexpected response: type=%d", msg.header.type);
+            ui_show_error(err);
         }
         ui_wait_for_key();
         return;
@@ -322,7 +339,7 @@ void handle_battle_phase() {
             }
         }
 
-        // Check server message
+        // Check for server message
         while (1) {
             fd_set readfds;
             FD_ZERO(&readfds);
@@ -461,8 +478,7 @@ void handle_server_message(Message* msg) {
             g_state->state = STATE_GAME_OVER;
             ui_show_game_over(g_state);
             ui_wait_for_key();
-            // Reset a návrat do menu
-            client_state_reset(g_state);
+            client_state_reset_game(g_state);
             g_state->state = STATE_MENU;
             break;
 

@@ -74,6 +74,7 @@ typedef struct {
 ClientState* client_state_create();
 void client_state_destroy(ClientState* state);
 void client_state_reset(ClientState* state);
+void client_state_reset_game(ClientState* state);
 
 void client_state_set_config(ClientState* state, const GameConfig* config);
 void client_state_set_socket(ClientState* state, int socket_fd);

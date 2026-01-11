@@ -73,6 +73,41 @@ void client_state_reset(ClientState* state) {
     client_state_reset_boards(state);
 }
 
+// Reset herného stavu (po game over)
+void client_state_reset_game(ClientState* state) {
+    if (!state) return;
+
+    state->state = STATE_MENU;
+    state->in_game = 0;
+    state->ships_placed = 0;
+    state->ships_ready = 0;
+
+    // Reset ship status
+    for (int i = 0; i < MAX_SHIPS; i++) {
+        state->my_ships_status[i] = 0;
+        state->opp_ships_status[i] = 0;
+    }
+
+    state->my_ships_sunk = 0;
+    state->opp_ships_sunk = 0;
+    state->my_hits = 0;
+    state->my_misses = 0;
+    state->opp_hits = 0;
+    state->opp_misses = 0;
+
+    state->is_my_turn = 0;
+    state->can_shoot_again = 0;
+
+    state->turn_time_left = 0;
+    state->game_time_left = 0;
+    state->last_time_update = 0;
+
+    state->last_opp_shot_row = -1;
+    state->last_opp_shot_col = -1;
+
+    client_state_reset_boards(state);
+}
+
 void client_state_set_config(ClientState* state, const GameConfig* config) {
     if (!state || !config) return;
 
