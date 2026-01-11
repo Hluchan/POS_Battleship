@@ -13,7 +13,7 @@ void ui_init() {
     keypad(stdscr, TRUE);
     curs_set(0);  // Skry kurzor
 
-    // Farby ak sú podporované
+    // Farby
     if (has_colors()) {
         start_color();
         init_pair(1, COLOR_CYAN, COLOR_BLACK);    // Voda

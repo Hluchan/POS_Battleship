@@ -521,30 +521,56 @@ int main(int argc, char* argv[]) {
                     break;
             }
         } else if (g_state->state == STATE_LOBBY) {
-            // Čakaj na správy
-            Message msg;
-            int recv_result = receive_message(g_state->socket_fd, &msg);
-            if (recv_result > 0) {
-                handle_server_message(&msg);
-            } else if (recv_result <= 0) {
-                ui_show_error("Server disconnected!");
-                sleep(2);
-                client_state_reset(g_state);
-                g_state->state = STATE_MENU;
+            // Prečítaj čakajúce správy
+            while (1) {
+                fd_set readfds;
+                FD_ZERO(&readfds);
+                FD_SET(g_state->socket_fd, &readfds);
+                struct timeval tv = {0, 100000};  // 100ms timeout
+
+                if (select(g_state->socket_fd + 1, &readfds, NULL, NULL, &tv) <= 0) {
+                    break;  // Žiadne správy alebo timeout
+                }
+
+                Message msg;
+                int recv_result = receive_message(g_state->socket_fd, &msg);
+                if (recv_result > 0) {
+                    handle_server_message(&msg);
+                } else if (recv_result <= 0) {
+                    ui_show_error("Server disconnected!");
+                    sleep(2);
+                    client_state_reset(g_state);
+                    g_state->state = STATE_MENU;
+                    break;
+                }
             }
         } else if (g_state->state == STATE_PLACEMENT) {
             handle_placement_phase();
         } else if (g_state->state == STATE_WAITING_START) {
             ui_show_message("Waiting for game to start...");
-            Message msg;
-            int recv_result = receive_message(g_state->socket_fd, &msg);
-            if (recv_result > 0) {
-                handle_server_message(&msg);
-            } else if (recv_result <= 0) {
-                ui_show_error("Server disconnected!");
-                sleep(2);
-                client_state_reset(g_state);
-                g_state->state = STATE_MENU;
+
+            // Prečítaj čakajúce správy
+            while (1) {
+                fd_set readfds;
+                FD_ZERO(&readfds);
+                FD_SET(g_state->socket_fd, &readfds);
+                struct timeval tv = {0, 100000};  // 100ms timeout pre responsívne UI
+
+                if (select(g_state->socket_fd + 1, &readfds, NULL, NULL, &tv) <= 0) {
+                    break;  // Žiadne správy alebo timeout
+                }
+
+                Message msg;
+                int recv_result = receive_message(g_state->socket_fd, &msg);
+                if (recv_result > 0) {
+                    handle_server_message(&msg);
+                } else if (recv_result <= 0) {
+                    ui_show_error("Server disconnected!");
+                    sleep(2);
+                    client_state_reset(g_state);
+                    g_state->state = STATE_MENU;
+                    break;
+                }
             }
         } else if (g_state->state == STATE_BATTLE) {
             handle_battle_phase();

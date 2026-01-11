@@ -5,7 +5,6 @@
 #define UI_H
 
 #include "client_state.h"
-#include "../common/protocol.h"
 
 void ui_init();
 void ui_cleanup();

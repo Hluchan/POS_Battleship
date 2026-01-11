@@ -6,7 +6,6 @@
 
 #include "../common/protocol.h"
 #include "player.h"
-#include "game.h"
 
 
 #define DEFAULT_PORT 57341
