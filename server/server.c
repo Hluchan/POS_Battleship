@@ -653,7 +653,7 @@ int init_server(int port) {
     }
 
     printf("[Server] Listening on 0.0.0.0:%d\n", current_port);
-    printf("[Server] Clients can connect using: <server_ip>:%d\n", current_port);
+    printf("[Server] Clients can connect using this port: %d\n", current_port);
     return current_port;  // Vráť skutočný port
 }
 
