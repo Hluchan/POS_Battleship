@@ -537,7 +537,7 @@ int main(int argc, char* argv[]) {
                     break;
             }
         } else if (g_state->state == STATE_LOBBY) {
-            // Prečítaj čakajúce správy
+            // Prečítaj VŠETKY čakajúce správy (non-blocking)
             while (1) {
                 fd_set readfds;
                 FD_ZERO(&readfds);
@@ -565,7 +565,7 @@ int main(int argc, char* argv[]) {
         } else if (g_state->state == STATE_WAITING_START) {
             ui_show_message("Waiting for game to start...");
 
-            // Prečítaj čakajúce správy
+            // Prečítaj VŠETKY čakajúce správy (non-blocking)
             while (1) {
                 fd_set readfds;
                 FD_ZERO(&readfds);

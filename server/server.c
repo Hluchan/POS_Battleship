@@ -162,6 +162,13 @@ void* game_timer_thread(void* arg) {
                 Player* p0 = game_get_player(game, 0);
                 Player* p1 = game_get_player(game, 1);
 
+                // Pošli finálny time update s časmi 0 aby klienti videli, že čas vypršal
+                TimeUpdateMsg final_time;
+                final_time.turn_time_left = 0;
+                final_time.game_time_left = 0;
+                if (p0) send_message(player_get_socket(p0), MSG_TIME_UPDATE, &final_time, sizeof(TimeUpdateMsg));
+                if (p1) send_message(player_get_socket(p1), MSG_TIME_UPDATE, &final_time, sizeof(TimeUpdateMsg));
+
                 int p0_sunk = player_get_ships_sunk(p0);
                 int p1_sunk = player_get_ships_sunk(p1);
 
@@ -466,6 +473,9 @@ void handle_shoot(ClientContext* ctx, Message* msg) {
 
     // Ak bol zásah, hráč môže strieľať znova
     if (result == SHOT_HIT || result == SHOT_SUNK) {
+        // Reset turn timer aby hráč dostal plný čas na ďalší ťah!
+        game_reset_turn_timer(ctx->current_game);
+
         YourTurnMsg ytm = { .continue_turn = 1 };
         send_message(ctx->socket_fd, MSG_YOUR_TURN, &ytm, sizeof(YourTurnMsg));
         send_time_update_to_both(ctx->current_game);
