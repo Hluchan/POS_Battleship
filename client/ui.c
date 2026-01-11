@@ -55,6 +55,7 @@ int ui_show_main_menu() {
 
     refresh();
 
+    timeout(-1);  // Block
     int choice = getch();
     return choice - '0';  // '1' -> 1, '2' -> 2, atď.
 }
@@ -387,5 +388,7 @@ void ui_show_game_over(ClientState* state) {
 
 //VSTUP
 void ui_wait_for_key() {
+    timeout(-1);  // Block
     getch();
+    timeout(100);  // Vráť späť na 100ms pre battle phase
 }

@@ -100,23 +100,20 @@ void handle_create_game() {
 }
 
 void handle_join_game() {
-    // Zahod všetky staré správy z queue pred poslaním MSG_LIST_GAMES
-    while (1) {
-        fd_set readfds;
-        FD_ZERO(&readfds);
-        FD_SET(g_state->socket_fd, &readfds);
-        struct timeval tv = {0, 0};  // Non-blocking
-
-        if (select(g_state->socket_fd + 1, &readfds, NULL, NULL, &tv) <= 0) {
-            break;  // Žiadne správy v queue
-        }
-
-        Message dummy;
-        receive_message(g_state->socket_fd, &dummy);  // Zober a zahoď
-    }
-
-    // Teraz pošli MSG_LIST_GAMES s čistou slate
+    // Pošli MSG_LIST_GAMES
     send_message(g_state->socket_fd, MSG_LIST_GAMES, NULL, 0);
+
+    // Počkaj na odpoveď s timeoutom
+    fd_set readfds;
+    FD_ZERO(&readfds);
+    FD_SET(g_state->socket_fd, &readfds);
+    struct timeval tv = {5, 0};  // 5 sekúnd timeout
+
+    if (select(g_state->socket_fd + 1, &readfds, NULL, NULL, &tv) <= 0) {
+        ui_show_error("Timeout waiting for game list");
+        ui_wait_for_key();
+        return;
+    }
 
     Message msg;
     int recv_result = receive_message(g_state->socket_fd, &msg);
@@ -148,6 +145,7 @@ void handle_join_game() {
         mvprintw(4, 5, "No games available.");
         mvprintw(6, 5, "Press any key to return to menu...");
         refresh();
+        timeout(-1);  // Block
         getch();
         return;
     }
@@ -164,8 +162,15 @@ void handle_join_game() {
     mvprintw(4 + glm->games_count + 2, 5, "Enter game ID to join: ");
     refresh();
 
+    echo();
+    curs_set(1);
+    timeout(-1);  // Block getch()
+
     int game_id;
-    ui_get_game_id(&game_id);
+    scanw("%d", &game_id);
+
+    noecho();
+    curs_set(0);
 
     JoinGameMsg jgm;
     jgm.game_id = game_id;
@@ -209,6 +214,7 @@ void handle_list_games() {
 
             mvprintw(4 + glm->games_count + 2, 5, "Press any key to continue...");
             refresh();
+            timeout(-1);  // Block
             getch();
         }
     }
@@ -226,6 +232,7 @@ void handle_placement_phase() {
     while (g_state->state == STATE_PLACEMENT) {
         ui_draw_placement_screen(g_state, cursor_row, cursor_col, orientation);
 
+        timeout(100);
         int ch = getch();
 
         switch (ch) {
@@ -478,7 +485,8 @@ void handle_server_message(Message* msg) {
             g_state->state = STATE_GAME_OVER;
             ui_show_game_over(g_state);
             ui_wait_for_key();
-            client_state_reset_game(g_state);
+            // Reset herného stavu
+            client_state_reset_game(g_state);  // ← Neuzatvára socket!
             g_state->state = STATE_MENU;
             break;
 
