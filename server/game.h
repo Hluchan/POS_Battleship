@@ -38,8 +38,6 @@ int game_add_player(Game* game, Player* player);
 int game_both_players_ready(const Game* game);
 void game_start(Game* game);
 void game_switch_turn(Game* game);
-void game_pause(Game* game);
-void game_resume(Game* game);
 void game_end(Game* game);
 
 // METODY CASU

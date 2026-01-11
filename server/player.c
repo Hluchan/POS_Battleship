@@ -199,6 +199,7 @@ int player_get_total_ships(const Player* player) {
 
 Ship* player_find_ship_at(Player* player, int row, int col) {
     if (!player) return NULL;
+
     for (int i = 0; i < player->ships_placed; i++) {
         Ship* ship = &player->ships[i];
 
@@ -208,14 +209,14 @@ Ship* player_find_ship_at(Player* player, int row, int col) {
                 col >= ship->col &&
                 col < ship->col + ship->length) {
                 return ship;
-                }
+            }
         } else { // VERTICAL
             // Vertikálna loď - rovnaký stĺpec, riadky od row po row+length-1
             if (ship->col == col &&
                 row >= ship->row &&
                 row < ship->row + ship->length) {
                 return ship;
-                }
+            }
         }
     }
 

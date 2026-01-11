@@ -20,9 +20,6 @@ typedef enum {
     MSG_PLACE_SHIP,         // Umiestnenie lode
     MSG_READY,              // Klient je pripravený
     MSG_SHOOT,              // Strela na súperovo pole
-    MSG_PAUSE_GAME,         // Pozastavenie hry
-    MSG_RESUME_GAME,        // Pokračovanie v hre
-    MSG_SURRENDER,          // Vzdanie hry
     MSG_DISCONNECT,         // Odpojenie
 
     // Server -> Client
@@ -37,8 +34,6 @@ typedef enum {
     MSG_SHOT_RESULT,        // Výsledok strely
     MSG_OPPONENT_SHOT,      // Súper vystrelil
     MSG_GAME_OVER,          // Koniec hry
-    MSG_GAME_PAUSED,        // Hra pozastavená
-    MSG_GAME_RESUMED,       // Hra pokračuje
     MSG_TIME_UPDATE,        // Aktualizácia času
     MSG_ERROR               // Všeobecná chyba
 } MessageType;

@@ -93,28 +93,47 @@ void send_time_update_to_both(Game* game) {
 void* game_timer_thread(void* arg) {
     (void)arg;
 
+    printf("[Timer] Game timer thread started\n");
+
     while (g_running) {
         sleep(1);  // Každú sekundu
 
         if (!g_game_manager) continue;
 
+        int active_games = 0;
+
         // Prejdi všetky hry
         for (int i = 0; i < MAX_GAMES; i++) {
             Game* game = game_manager_get_game(g_game_manager, i);
-            if (!game || game_get_state(game) != BATTLE_PHASE) continue;
+            if (!game) continue;
+
+            GameState state = game_get_state(game);
+            if (state != BATTLE_PHASE) continue;
+
+            active_games++;
+
+            // Debug info
+            int turn_left = game_get_remaining_turn_time(game);
+            int game_left = game_get_remaining_game_time(game);
+            int current = game_get_current_player(game);
+
+            if (active_games == 1) {  // Log len pre prvú hru aby sme nespamovali
+                printf("[Timer] Game %d: turn=%ds, game=%ds, player=%d\n",
+                       game_get_id(game), turn_left, game_left, current);
+            }
 
             // Pošli time update
             send_time_update_to_both(game);
 
             // Skontroluj turn timeout
             if (game_is_turn_timeout(game)) {
-                printf("[Server] Turn timeout in game %d - switching turn\n", game_get_id(game));
+                printf("[Timer] Turn timeout in game %d - switching turn\n", game_get_id(game));
 
-                // Switch turn
-                game_lock(game);
-                int current = game_get_current_player(game);
+                // Získaj current pred switch
+                int prev_player = game_get_current_player(game);
+
+                // Switch turn (už má vlastný lock)
                 game_switch_turn(game);
-                game_unlock(game);
 
                 // Pošli MSG_YOUR_TURN novému hráčovi
                 Player* next = game_get_player(game, game_get_current_player(game));
@@ -123,7 +142,7 @@ void* game_timer_thread(void* arg) {
                     send_message(player_get_socket(next), MSG_YOUR_TURN, &ytm, sizeof(YourTurnMsg));
 
                     // Informuj predchádzajúceho hráča
-                    Player* prev = game_get_player(game, current);
+                    Player* prev = game_get_player(game, prev_player);
                     if (prev) {
                         send_error(player_get_socket(prev), "Turn timeout!");
                     }
@@ -134,18 +153,19 @@ void* game_timer_thread(void* arg) {
 
             // Skontroluj game timeout
             if (game_is_game_timeout(game)) {
-                printf("[Server] Game timeout in game %d - ending game\n", game_get_id(game));
+                printf("[Timer] Game timeout in game %d - ending game\n", game_get_id(game));
 
-                game_lock(game);
+                // Ukončenie hry (už má vlastný lock)
                 game_end(game);
 
-                // Urči víťaza podľa potopených lodí
+                // Získaj hráčov a ich štatistiky
                 Player* p0 = game_get_player(game, 0);
                 Player* p1 = game_get_player(game, 1);
 
                 int p0_sunk = player_get_ships_sunk(p0);
                 int p1_sunk = player_get_ships_sunk(p1);
 
+                // Urči víťaza podľa potopených lodí
                 int winner = -1;  // Draw
                 if (p0_sunk > p1_sunk) {
                     winner = 0;
@@ -173,8 +193,6 @@ void* game_timer_thread(void* arg) {
 
                 send_message(player_get_socket(p0), MSG_GAME_OVER, &gom, sizeof(GameOverMsg));
                 send_message(player_get_socket(p1), MSG_GAME_OVER, &gom, sizeof(GameOverMsg));
-
-                game_unlock(game);
             }
         }
     }
@@ -503,12 +521,6 @@ void* handle_client(void* arg) {
 
             case MSG_SHOOT:
                 handle_shoot(ctx, &msg);
-                break;
-
-            case MSG_PAUSE_GAME:
-                if (ctx->current_game) {
-                    game_pause(ctx->current_game);
-                }
                 break;
 
             case MSG_DISCONNECT:

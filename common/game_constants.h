@@ -48,7 +48,6 @@ typedef enum {
     WAITING_FOR_PLAYER,
     PLACEMENT_PHASE,
     BATTLE_PHASE,
-    GAME_PAUSED,
     GAME_ENDED
 } GameState;
 

@@ -206,27 +206,6 @@ void game_switch_turn(Game* game) {
     game_unlock(game);
 }
 
-void game_pause(Game* game) {
-    if (!game) return;
-
-    game_lock(game);
-    if (game->state == BATTLE_PHASE) {
-        game->state = GAME_PAUSED;
-    }
-    game_unlock(game);
-}
-
-void game_resume(Game* game) {
-    if (!game) return;
-
-    game_lock(game);
-    if (game->state == GAME_PAUSED) {
-        game->state = BATTLE_PHASE;
-        game->turn_start_time = time(NULL);  // Reset turn timer
-    }
-    game_unlock(game);
-}
-
 void game_end(Game* game) {
     if (!game) return;
 
