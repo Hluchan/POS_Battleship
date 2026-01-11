@@ -153,8 +153,20 @@ void ui_draw_game_screen(ClientState* state) {
         mvprintw(1, 2, "[Opponent's turn]");
     }
 
-    mvprintw(1, 30, "Turn time: %ds", state->turn_time_left);
-    mvprintw(1, 50, "Game time: %ds", state->game_time_left);
+    int displayed_turn = state->turn_time_left;
+    int displayed_game = state->game_time_left;
+
+    if (state->last_time_update > 0) {
+        int elapsed = (int)difftime(time(NULL), state->last_time_update);
+        displayed_turn = state->turn_time_left - elapsed;
+        displayed_game = state->game_time_left - elapsed;
+
+        if (displayed_turn < 0) displayed_turn = 0;
+        if (displayed_game < 0) displayed_game = 0;
+    }
+
+    mvprintw(1, 30, "Turn time: %ds", displayed_turn);
+    mvprintw(1, 50, "Game time: %ds", displayed_game);
 
     // Moje pole
     mvprintw(3, 2, "YOUR BOARD:");

@@ -286,7 +286,7 @@ void handle_battle_phase() {
         attroff(A_REVERSE);
         refresh();
 
-        timeout(100); //TODO maybe lower this
+        timeout(100);  // 100ms
         int ch = getch();
 
         if (ch != ERR) {
@@ -322,7 +322,7 @@ void handle_battle_phase() {
             }
         }
 
-        // Check pre server message - PREČÍTAJ VŠETKY
+        // Check server message
         while (1) {
             fd_set readfds;
             FD_ZERO(&readfds);
@@ -469,6 +469,7 @@ void handle_server_message(Message* msg) {
         case MSG_TIME_UPDATE:
             g_state->turn_time_left = msg->data.time_update.turn_time_left;
             g_state->game_time_left = msg->data.time_update.game_time_left;
+            g_state->last_time_update = time(NULL);  // Zapamätaj si kedy prišiel update
             break;
 
         case MSG_ERROR:

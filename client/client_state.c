@@ -65,6 +65,7 @@ void client_state_reset(ClientState* state) {
 
     state->turn_time_left = 0;
     state->game_time_left = 0;
+    state->last_time_update = 0;
 
     state->last_opp_shot_row = -1;
     state->last_opp_shot_col = -1;

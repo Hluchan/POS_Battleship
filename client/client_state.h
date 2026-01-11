@@ -4,6 +4,7 @@
 #ifndef CLIENT_STATE_H
 #define CLIENT_STATE_H
 
+#include <time.h>
 #include "../common/protocol.h"
 #include "../common/game_constants.h"
 
@@ -58,6 +59,7 @@ typedef struct {
     // Čas
     int turn_time_left;
     int game_time_left;
+    time_t last_time_update;     // Kedy prišiel posledný MSG_TIME_UPDATE
 
     // Posledná akcia súpera
     int last_opp_shot_row;
