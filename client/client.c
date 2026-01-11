@@ -104,32 +104,48 @@ void handle_join_game() {
     send_message(g_state->socket_fd, MSG_LIST_GAMES, NULL, 0);
 
     Message msg;
-    if (receive_message(g_state->socket_fd, &msg) > 0 && msg.header.type == MSG_GAME_LIST) {
-        GameListMsg* glm = &msg.data.game_list;
+    int recv_result = receive_message(g_state->socket_fd, &msg);
 
-        clear();
-        mvprintw(2, 5, "=== AVAILABLE GAMES ===");
-
-        if (glm->games_count == 0) {
-            mvprintw(4, 5, "No games available.");
-            mvprintw(6, 5, "Press any key to return to menu...");
-            refresh();
-            getch();
-            return;
-        }
-
-        for (int i = 0; i < glm->games_count; i++) {
-            mvprintw(4 + i, 5, "[%d] %s - %dx%d - %d/2 players",
-                     glm->games[i].game_id,
-                     glm->games[i].game_name,
-                     glm->games[i].board_size,
-                     glm->games[i].board_size,
-                     glm->games[i].players_count);
-        }
-
-        mvprintw(4 + glm->games_count + 2, 5, "Enter game ID to join: ");
-        refresh();
+    if (recv_result <= 0) {
+        ui_show_error("Failed to receive game list from server");
+        ui_wait_for_key();
+        return;
     }
+
+    if (msg.header.type != MSG_GAME_LIST) {
+        if (msg.header.type == MSG_ERROR) {
+            ui_show_error(msg.data.error.error_message);
+        } else {
+            ui_show_error("Unexpected response from server");
+        }
+        ui_wait_for_key();
+        return;
+    }
+
+    GameListMsg* glm = &msg.data.game_list;
+
+    clear();
+    mvprintw(2, 5, "=== AVAILABLE GAMES ===");
+
+    if (glm->games_count == 0) {
+        mvprintw(4, 5, "No games available.");
+        mvprintw(6, 5, "Press any key to return to menu...");
+        refresh();
+        getch();
+        return;
+    }
+
+    for (int i = 0; i < glm->games_count; i++) {
+        mvprintw(4 + i, 5, "[%d] %s - %dx%d - %d/2 players",
+                 glm->games[i].game_id,
+                 glm->games[i].game_name,
+                 glm->games[i].board_size,
+                 glm->games[i].board_size,
+                 glm->games[i].players_count);
+    }
+
+    mvprintw(4 + glm->games_count + 2, 5, "Enter game ID to join: ");
+    refresh();
 
     int game_id;
     ui_get_game_id(&game_id);
@@ -554,7 +570,7 @@ int main(int argc, char* argv[]) {
                 fd_set readfds;
                 FD_ZERO(&readfds);
                 FD_SET(g_state->socket_fd, &readfds);
-                struct timeval tv = {0, 100000};  // 100ms timeout pre responsívne UI
+                struct timeval tv = {0, 100000};  // 100ms timeout
 
                 if (select(g_state->socket_fd + 1, &readfds, NULL, NULL, &tv) <= 0) {
                     break;  // Žiadne správy alebo timeout
