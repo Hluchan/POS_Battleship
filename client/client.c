@@ -286,7 +286,7 @@ void handle_battle_phase() {
         attroff(A_REVERSE);
         refresh();
 
-        timeout(1000);  // 1 sekunda timeout pre non-blocking input
+        timeout(100); //TODO maybe lower this
         int ch = getch();
 
         if (ch != ERR) {
@@ -322,13 +322,17 @@ void handle_battle_phase() {
             }
         }
 
-        // Check for server messages
-        fd_set readfds;
-        FD_ZERO(&readfds);
-        FD_SET(g_state->socket_fd, &readfds);
-        struct timeval tv = {0, 0};
+        // Check pre server message - PREČÍTAJ VŠETKY
+        while (1) {
+            fd_set readfds;
+            FD_ZERO(&readfds);
+            FD_SET(g_state->socket_fd, &readfds);
+            struct timeval tv = {0, 0};  // Non-blocking check
 
-        if (select(g_state->socket_fd + 1, &readfds, NULL, NULL, &tv) > 0) {
+            if (select(g_state->socket_fd + 1, &readfds, NULL, NULL, &tv) <= 0) {
+                break;  // Žiadne ďalšie správy
+            }
+
             Message msg;
             int recv_result = receive_message(g_state->socket_fd, &msg);
             if (recv_result > 0) {
