@@ -547,18 +547,24 @@ void* handle_client(void* arg) {
 cleanup:
     // Ak je hráč v hre, ukonči ju
     if (ctx->current_game) {
-        game_end(ctx->current_game);
+        GameState current_state = game_get_state(ctx->current_game);
 
-        // Oznám druhému hráčovi
-        int opponent_id = (game_get_player(ctx->current_game, 0) == ctx->player) ? 1 : 0;
-        Player* opponent = game_get_player(ctx->current_game, opponent_id);
+        // Pošli "Opponent disconnected" ak hra este neskoncila
+        if (current_state != GAME_ENDED) {
+            game_end(ctx->current_game);
 
-        if (opponent) {
-            GameOverMsg gom;
-            gom.winner = opponent_id;
-            strcpy(gom.reason, "Opponent disconnected");
-            send_message(player_get_socket(opponent), MSG_GAME_OVER, &gom, sizeof(GameOverMsg));
+            // Oznám druhému hráčovi
+            int opponent_id = (game_get_player(ctx->current_game, 0) == ctx->player) ? 1 : 0;
+            Player* opponent = game_get_player(ctx->current_game, opponent_id);
+
+            if (opponent) {
+                GameOverMsg gom;
+                gom.winner = opponent_id;
+                strcpy(gom.reason, "Opponent disconnected");
+                send_message(player_get_socket(opponent), MSG_GAME_OVER, &gom, sizeof(GameOverMsg));
+            }
         }
+        // Ak hra už skončila (GAME_ENDED), nepošli nič - hráč už dostal MSG_GAME_OVER
 
         ctx->current_game = NULL;
     }

@@ -164,7 +164,7 @@ void handle_join_game() {
 
     echo();
     curs_set(1);
-    timeout(-1);  // Block getch()
+    timeout(-1);  // Block
 
     int game_id;
     scanw("%d", &game_id);
@@ -481,6 +481,12 @@ void handle_server_message(Message* msg) {
             break;
 
         case MSG_GAME_OVER:
+            // Ignoruj MSG_GAME_OVER ak už sme v game over alebo menu
+            // (môže prísť "Opponent disconnected" ak opponent klikne rýchlejšie)
+            if (g_state->state == STATE_GAME_OVER || g_state->state == STATE_MENU) {
+                break;  // Ignoruj
+            }
+
             client_state_update_stats(g_state, &msg->data.game_over);
             g_state->state = STATE_GAME_OVER;
             ui_show_game_over(g_state);
