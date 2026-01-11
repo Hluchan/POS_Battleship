@@ -32,6 +32,9 @@ void ui_cleanup() {
 int ui_show_main_menu() {
     clear();
 
+    // Reset na blocking mode
+    timeout(-1);
+
     int row, col;
     getmaxyx(stdscr, row, col);
 

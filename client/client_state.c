@@ -36,6 +36,12 @@ void client_state_destroy(ClientState* state) {
 void client_state_reset(ClientState* state) {
     if (!state) return;
 
+    // Zatvor socket ak je otvorený
+    if (state->socket_fd != -1) {
+        close(state->socket_fd);
+        state->socket_fd = -1;
+    }
+
     state->state = STATE_MENU;
     state->in_game = 0;
     state->ships_placed = 0;

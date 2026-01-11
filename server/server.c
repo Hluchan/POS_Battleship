@@ -66,6 +66,13 @@ int receive_message(int socket_fd, Message* msg) {
     return 1;
 }
 
+void send_error(int socket_fd, const char* error_msg) {
+    ErrorMsg err;
+    strncpy(err.error_message, error_msg, sizeof(err.error_message) - 1);
+    err.error_message[sizeof(err.error_message) - 1] = '\0';
+    send_message(socket_fd, MSG_ERROR, &err, sizeof(ErrorMsg));
+}
+
 void send_time_update_to_both(Game* game) {
     if (!game) return;
 
@@ -82,11 +89,97 @@ void send_time_update_to_both(Game* game) {
     send_message(player_get_socket(p1), MSG_TIME_UPDATE, &tum, sizeof(TimeUpdateMsg));
 }
 
-void send_error(int socket_fd, const char* error_msg) {
-    ErrorMsg err;
-    strncpy(err.error_message, error_msg, sizeof(err.error_message) - 1);
-    err.error_message[sizeof(err.error_message) - 1] = '\0';
-    send_message(socket_fd, MSG_ERROR, &err, sizeof(ErrorMsg));
+// Game timer thread - kontroluje timeouty a posiela updates
+void* game_timer_thread(void* arg) {
+    (void)arg;
+
+    while (g_running) {
+        sleep(1);  // Každú sekundu
+
+        if (!g_game_manager) continue;
+
+        // Prejdi všetky hry
+        for (int i = 0; i < MAX_GAMES; i++) {
+            Game* game = game_manager_get_game(g_game_manager, i);
+            if (!game || game_get_state(game) != BATTLE_PHASE) continue;
+
+            // Pošli time update
+            send_time_update_to_both(game);
+
+            // Skontroluj turn timeout
+            if (game_is_turn_timeout(game)) {
+                printf("[Server] Turn timeout in game %d - switching turn\n", game_get_id(game));
+
+                // Switch turn
+                game_lock(game);
+                int current = game_get_current_player(game);
+                game_switch_turn(game);
+                game_unlock(game);
+
+                // Pošli MSG_YOUR_TURN novému hráčovi
+                Player* next = game_get_player(game, game_get_current_player(game));
+                if (next) {
+                    YourTurnMsg ytm = { .continue_turn = 0 };
+                    send_message(player_get_socket(next), MSG_YOUR_TURN, &ytm, sizeof(YourTurnMsg));
+
+                    // Informuj predchádzajúceho hráča
+                    Player* prev = game_get_player(game, current);
+                    if (prev) {
+                        send_error(player_get_socket(prev), "Turn timeout!");
+                    }
+                }
+
+                send_time_update_to_both(game);
+            }
+
+            // Skontroluj game timeout
+            if (game_is_game_timeout(game)) {
+                printf("[Server] Game timeout in game %d - ending game\n", game_get_id(game));
+
+                game_lock(game);
+                game_end(game);
+
+                // Urči víťaza podľa potopených lodí
+                Player* p0 = game_get_player(game, 0);
+                Player* p1 = game_get_player(game, 1);
+
+                int p0_sunk = player_get_ships_sunk(p0);
+                int p1_sunk = player_get_ships_sunk(p1);
+
+                int winner = -1;  // Draw
+                if (p0_sunk > p1_sunk) {
+                    winner = 0;
+                } else if (p1_sunk > p0_sunk) {
+                    winner = 1;
+                } else {
+                    // Rovnaký počet potopených - pozri hits
+                    int p0_hits = player_get_hits(p0);
+                    int p1_hits = player_get_hits(p1);
+                    if (p0_hits > p1_hits) winner = 0;
+                    else if (p1_hits > p0_hits) winner = 1;
+                }
+
+                // Pošli game over
+                GameOverMsg gom;
+                gom.winner = winner;
+                gom.player0_ships_sunk = p0_sunk;
+                gom.player1_ships_sunk = p1_sunk;
+                gom.player0_hits = player_get_hits(p0);
+                gom.player1_hits = player_get_hits(p1);
+                gom.player0_misses = player_get_misses(p0);
+                gom.player1_misses = player_get_misses(p1);
+                gom.game_time = game_get_elapsed_time(game);
+                strcpy(gom.reason, "Game time expired");
+
+                send_message(player_get_socket(p0), MSG_GAME_OVER, &gom, sizeof(GameOverMsg));
+                send_message(player_get_socket(p1), MSG_GAME_OVER, &gom, sizeof(GameOverMsg));
+
+                game_unlock(game);
+            }
+        }
+    }
+
+    return NULL;
 }
 
 Game* find_player_game(Player* player) {
@@ -570,6 +663,17 @@ int main(int argc, char* argv[]) {
     printf("[Server] Battleship server started successfully\n");
     printf("[Server] Waiting for connections...\n");
     printf("[Server] Press Ctrl+C to stop\n\n");
+
+    // Spusti game timer thread
+    pthread_t timer_thread;
+    if (pthread_create(&timer_thread, NULL, game_timer_thread, NULL) != 0) {
+        perror("pthread_create timer");
+        game_manager_destroy(g_game_manager);
+        close(g_server_socket);
+        return 1;
+    }
+    pthread_detach(timer_thread);
+    printf("[Server] Game timer thread started\n");
 
     // Hlavný accept loop
     while (g_running) {
