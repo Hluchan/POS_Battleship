@@ -47,15 +47,17 @@ return 1;
 }
 
 // STRELBA
-ShotResult process_shot(Player* target, int row, int col) {
-    if (!target) return SHOT_MISS;
+ShotResult process_shot(Player* shooter, Player* target, int row, int col) {
+    if (!shooter || !target) return SHOT_MISS;
 
     CellState cell = player_get_board_cell(target, row, col);
 
     if (cell == SHIP) {
-        // Zásah
+        // Zásah na target board
         player_set_board_cell(target, row, col, HIT);
-        player_increment_hits(target);
+
+        // INCREMENT stats na SHOOTER (ten čo strieľal)!
+        player_increment_hits(shooter);
 
         // Kontrola potopenia
         Ship* hit_ship = player_find_ship_at(target, row, col);
@@ -64,7 +66,10 @@ ShotResult process_shot(Player* target, int row, int col) {
 
             if (player_is_ship_sunk(hit_ship)) {
                 // Loď bola potopená
+                // ships_sunk sa incrementuje na TARGET (komu potopili loď)
                 player_increment_ships_sunk(target);
+
+                // Ale SHOOTER dostáva credit za potopenie (v jeho hits už je)
                 return SHOT_SUNK;
             }
         }
@@ -73,7 +78,9 @@ ShotResult process_shot(Player* target, int row, int col) {
     } else if (cell == WATER) {
         // Minutie
         player_set_board_cell(target, row, col, MISS);
-        player_increment_misses(target);
+
+        // INCREMENT stats na SHOOTER (ten čo strieľal)!
+        player_increment_misses(shooter);
         return SHOT_MISS;
     } else {
         // Už bolo zasiahnuté

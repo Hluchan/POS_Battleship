@@ -12,7 +12,7 @@
 int validate_and_place_ship(Player* player, const Ship* ship);
 
 // STRELBA
-ShotResult process_shot(Player* target, int row, int col);
+ShotResult process_shot(Player* shooter, Player* target, int row, int col);
 
 // UKONCENIE HRY
 int check_game_over(Game* game);

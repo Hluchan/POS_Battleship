@@ -425,8 +425,8 @@ void handle_shoot(ClientContext* ctx, Message* msg) {
         return;
     }
 
-    // Spracuj strelu
-    ShotResult result = process_shot(opponent, sm->target.row, sm->target.col);
+    // Spracuj strelu - shooter je current_player, target je opponent
+    ShotResult result = process_shot(current_player, opponent, sm->target.row, sm->target.col);
 
     // Priprav výsledok
     ShotResultMsg srm;
